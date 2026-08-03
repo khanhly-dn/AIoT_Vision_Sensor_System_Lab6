@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Lab 6 Nâng cao - CV as IoT Sensor</title>
+<style>
+:root {
+  --blue:#0b3f75; --blue2:#145da0; --orange:#f28c28; --green:#16a34a;
+  --red:#dc2626; --purple:#7c3aed;
+  --bg:#f0f4f9; --card:#ffffff; --line:#d9e1ec; --text:#1f2937;
+  --badge-bg:#e8f2ff; --code-bg:#0b1220;
+}
+*{box-sizing:border-box;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);margin:0;font-size:14px;}
+header{background:linear-gradient(90deg,#0b3f75,#1e6fb8);color:white;padding:18px 28px;}
+header h1{margin:0 0 4px;font-size:22px;} header p{margin:0;opacity:.9;font-size:13px;}
+main{max-width:1400px;margin:16px auto;padding:0 16px 40px;}
+h2{font-size:16px;margin:0 0 10px;color:var(--blue);}
+h3{font-size:14px;margin:0 0 8px;color:#374151;}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin:12px 0;box-shadow:0 2px 6px rgba(20,40,80,.06);}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+@media(max-width:900px){.grid2,.grid3,.grid4{grid-template-columns:1fr;}}
+/* Buttons */
+.btn{border:0;border-radius:8px;padding:8px 13px;margin:3px;cursor:pointer;font-weight:600;font-size:13px;transition:opacity .15s;}
+.btn:hover{opacity:.85;}
+.btn-primary{background:#0b5cad;color:white;}
+.btn-secondary{background:#4b5563;color:white;}
+.btn-warn{background:#b45309;color:white;}
+.btn-green{background:#15803d;color:white;}
+.btn-red{background:#dc2626;color:white;}
+.btn-purple{background:#7c3aed;color:white;}
+/* Params */
+.param-group{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px;margin:8px 0;}
+.param-group label{font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:3px;}
+.param-row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;}
+.param-item{display:flex;flex-direction:column;}
+.param-item span{font-size:11px;color:#94a3b8;margin-top:2px;}
+input[type=number],input[type=text]{padding:6px 9px;border:1px solid #b8c4d6;border-radius:7px;width:90px;font-size:13px;}
+input[type=range]{width:120px;}
+.range-val{font-weight:700;color:var(--blue);font-size:13px;min-width:35px;display:inline-block;}
+/* Metric cards */
+.metric-card{text-align:center;padding:10px 6px;}
+.metric-num{font-size:26px;font-weight:800;color:var(--blue);}
+.metric-label{font-size:11px;color:#6b7280;margin-top:2px;}
+/* Images */
+img.preview{max-width:100%;border:1px solid #ccd6e0;border-radius:9px;background:#eef2f7;min-height:120px;object-fit:contain;}
+#stream{width:100%;min-height:200px;object-fit:contain;}
+/* Tables */
+.tbl-wrap{overflow-x:auto;max-height:280px;overflow-y:auto;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th,td{border-bottom:1px solid #e5e7eb;padding:6px 8px;text-align:left;white-space:nowrap;}
+th{background:#eef4fb;color:#0b3f75;position:sticky;top:0;}
+/* JSON output */
+pre#out{background:var(--code-bg);color:#e5e7eb;border-radius:10px;padding:12px;overflow:auto;max-height:300px;font-size:12px;margin:0;}
+/* Badge */
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;margin-left:6px;}
+.badge-blue{background:#dbeafe;color:#1d4ed8;}
+.badge-orange{background:#fef3c7;color:#92400e;}
+.badge-green{background:#dcfce7;color:#15803d;}
+.badge-red{background:#fee2e2;color:#b91c1c;}
+.badge-gray{background:#f1f5f9;color:#475569;}
+/* ROI canvas overlay */
+#roi-canvas-wrap{position:relative;display:inline-block;width:100%;}
+#roi-canvas{position:absolute;top:0;left:0;cursor:crosshair;pointer-events:auto;border-radius:9px;}
+#stream-img-wrap{position:relative;width:100%;}
+/* Tabs */
+.tabs{display:flex;gap:4px;margin-bottom:8px;}
+.tab{padding:5px 12px;border-radius:7px 7px 0 0;background:#e2e8f0;cursor:pointer;font-size:12px;font-weight:600;color:#475569;}
+.tab.active{background:var(--blue);color:white;}
+.tab-content{display:none;} .tab-content.active{display:block;}
+/* Severity colors */
+.sev-WARNING{color:#b45309;font-weight:700;}
+.sev-NORMAL{color:#15803d;}
+.sev-INFO{color:#1d4ed8;}
+/* Tooltip */
+[title]{cursor:help;}
+</style>
+</head>
+<body>
+<header>
+  <h1>🔬 Lab 6 Nâng cao — Computer Vision as IoT Sensor</h1>
+  <p>ROI · Threshold · Canny Edge · Blur Score · Motion Score · Cooldown · Parameter Experiment Log</p>
+</header>
+<main>
+
+<!-- ── Section 1: Camera + Params ───────────────────────────────────────── -->
+<div class="card">
+  <h2>1. Điều khiển camera &amp; tham số thử nghiệm</h2>
+  <div class="grid2">
+    <!-- Camera source -->
+    <div>
+      <div class="param-group">
+        <label>Camera source (0 = laptop, URL = IP/RTSP camera)</label>
+        <div class="param-row">
+          <div class="param-item">
+            <input type="text" id="source" value="0" style="width:200px"/>
+            <span>0 hoặc http://... hoặc rtsp://...</span>
+          </div>
+          <button class="btn btn-primary" onclick="startStream()">▶ Bật stream</button>
+          <button class="btn btn-secondary" onclick="stopStream()">■ Dừng</button>
+        </div>
+      </div>
+      <div class="param-group">
+        <label>Hành động chụp / ghi</label>
+        <div>
+          <button class="btn btn-primary" onclick="snapshot()">📷 Snapshot</button>
+          <button class="btn btn-warn" onclick="recordVideo()">🎥 Video 5s</button>
+          <button class="btn btn-green" onclick="motionCapture()">🏃 Motion Capture</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tunable params -->
+    <div>
+      <div class="param-group">
+        <label title="Giá trị ngưỡng để tách vùng sáng/tối trong ảnh grayscale">🎚 Threshold ảnh xám</label>
+        <div class="param-row">
+          <div class="param-item">
+            <input type="range" id="threshRange" min="0" max="255" value="120" oninput="syncRange('thresh')"/>
+            <span>Thấp = nhiều trắng, cao = nhiều đen</span>
+          </div>
+          <span class="range-val" id="threshVal">120</span>
+          <div class="param-item">
+            <input type="number" id="threshNum" value="120" min="0" max="255" oninput="syncNum('thresh')"/>
+            <span>Thử: 80 / 120 / 180</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="param-group">
+        <label title="Canny edge: low = ngưỡng dưới, high = ngưỡng trên">⚡ Canny Edge (low / high)</label>
+        <div class="param-row">
+          <div class="param-item">
+            <input type="number" id="cannyLow" value="80" min="1" max="254" style="width:70px"/>
+            <span>Low (thử: 50/80/150)</span>
+          </div>
+          <div class="param-item">
+            <input type="number" id="cannyHigh" value="160" min="2" max="255" style="width:70px"/>
+            <span>High (thử: 100/160/250)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="param-group">
+        <label title="Threshold frame diff để xác định pixel thay đổi">🏃 Motion threshold / Min area / Cooldown</label>
+        <div class="param-row">
+          <div class="param-item">
+            <input type="number" id="motionThresh" value="25" min="1" max="255" style="width:70px"/>
+            <span>Diff threshold (15/25/40)</span>
+          </div>
+          <div class="param-item">
+            <input type="number" id="minArea" value="800" min="10" max="50000" style="width:80px"/>
+            <span>Min area (500/800/1500)</span>
+          </div>
+          <div class="param-item">
+            <input type="number" id="cooldown" value="1" min="0" max="60" step="0.5" style="width:70px"/>
+            <span>Cooldown s (0/1/5)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROI controls -->
+  <div class="param-group">
+    <label title="ROI = Region of Interest: vùng ảnh ưu tiên phân tích">🔲 ROI (Region of Interest) — để trống = full frame</label>
+    <div class="param-row">
+      <div class="param-item">
+        <input type="number" id="roiX1" placeholder="x1" style="width:70px"/>
+        <span>x1 (trái)</span>
+      </div>
+      <div class="param-item">
+        <input type="number" id="roiY1" placeholder="y1" style="width:70px"/>
+        <span>y1 (trên)</span>
+      </div>
+      <div class="param-item">
+        <input type="number" id="roiX2" placeholder="x2" style="width:70px"/>
+        <span>x2 (phải)</span>
+      </div>
+      <div class="param-item">
+        <input type="number" id="roiY2" placeholder="y2" style="width:70px"/>
+        <span>y2 (dưới)</span>
+      </div>
+      <button class="btn btn-purple" onclick="setROICenter()">🎯 ROI trung tâm 50%</button>
+      <button class="btn btn-secondary" onclick="clearROI()">✕ Xóa ROI</button>
+      <span style="font-size:11px;color:#64748b;align-self:center;">Hoặc kéo trực tiếp trên stream ↓</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── Section 2: Stream + Upload ───────────────────────────────────────── -->
+<div class="grid2">
+  <div class="card">
+    <h3>Live stream <span class="badge badge-blue" id="streamStatus">Chưa bật</span></h3>
+    <div id="stream-img-wrap">
+      <img id="stream" class="preview" alt="Camera stream" />
+      <canvas id="roi-canvas"></canvas>
+    </div>
+    <p style="font-size:11px;color:#64748b;margin:6px 0 0;">Kéo trên stream để vẽ ROI thủ công.</p>
+  </div>
+  <div class="card">
+    <h3>Upload ảnh có sẵn</h3>
+    <p style="font-size:12px;color:#4b5563;margin-bottom:8px;">Dùng khi không có camera hoặc muốn test pipeline với ảnh cụ thể. Tham số threshold, edge, ROI phía trên sẽ được áp dụng.</p>
+    <input id="file" type="file" accept="image/*" style="font-size:13px;margin-bottom:8px;display:block;"/>
+    <button class="btn btn-primary" onclick="uploadImage()">📤 Upload và xử lý ảnh</button>
+    <div style="margin-top:10px">
+      <h3>Ảnh gốc / raw mới nhất</h3>
+      <img id="raw" class="preview" alt="Raw image" />
+    </div>
+  </div>
+</div>
+
+<!-- ── Section 3: Processed image ──────────────────────────────────────── -->
+<div class="card">
+  <h3>Ảnh xử lý nâng cao — Contact sheet 6 ô</h3>
+  <p style="font-size:12px;color:#4b5563;margin-bottom:8px;">
+    1. Original+ROI &nbsp;|&nbsp; 2. ROI crop &nbsp;|&nbsp; 3. Grayscale &nbsp;|&nbsp;
+    4. Threshold (tunable) &nbsp;|&nbsp; 5. Canny Edge (tunable) &nbsp;|&nbsp; 6. Motion Mask / Laplacian
+  </p>
+  <img id="processed" class="preview" alt="Processed contact sheet" style="max-height:480px;width:100%;object-fit:contain;"/>
+</div>
+
+<!-- ── Section 4: Metrics ───────────────────────────────────────────────── -->
+<div class="grid4">
+  <div class="card metric-card"><div class="metric-num" id="metadataCount">0</div><div class="metric-label">ảnh đã ghi metadata</div></div>
+  <div class="card metric-card"><div class="metric-num" id="eventCount">0</div><div class="metric-label">event đã sinh</div></div>
+  <div class="card metric-card"><div class="metric-num" id="paramCount">0</div><div class="metric-label">parameter experiments</div></div>
+  <div class="card metric-card"><div class="metric-num" id="latestEvent" style="font-size:14px;word-break:break-all;">-</div><div class="metric-label">event mới nhất</div></div>
+</div>
+
+<!-- ── Section 5: JSON output ───────────────────────────────────────────── -->
+<div class="card">
+  <h2>2. Kết quả JSON thao tác gần nhất</h2>
+  <pre id="out">Chưa có dữ liệu. Thực hiện snapshot / upload / motion capture để quan sát.</pre>
+</div>
+
+<!-- ── Section 6: Tables ────────────────────────────────────────────────── -->
+<div class="grid2">
+  <div class="card">
+    <h2>3. Metadata ảnh <span class="badge badge-blue" id="metaBadge">0</span></h2>
+    <div class="tbl-wrap" id="metadataTable"><p style="color:#94a3b8;font-size:12px;">Chưa có dữ liệu.</p></div>
+  </div>
+  <div class="card">
+    <h2>4. Event log <span class="badge badge-orange" id="evtBadge">0</span></h2>
+    <div class="tbl-wrap" id="eventTable"><p style="color:#94a3b8;font-size:12px;">Chưa có dữ liệu.</p></div>
+  </div>
+</div>
+
+<!-- ── Section 7: Parameter experiment log ──────────────────────────────── -->
+<div class="card">
+  <h2>5. 📊 Parameter Experiment Log
+    <span class="badge badge-green" id="paramBadge">0</span>
+    <button class="btn btn-secondary" onclick="refreshDashboard()" style="float:right;font-size:12px;">🔄 Refresh</button>
+  </h2>
+  <p style="font-size:12px;color:#4b5563;margin-bottom:8px;">
+    Mỗi lần snapshot, upload hoặc motion capture với tham số bất kỳ đều tạo ra một dòng log ở đây.
+    Dùng bảng này để so sánh ảnh hưởng của từng tham số.
+  </p>
+  <div class="tbl-wrap" id="paramTable"><p style="color:#94a3b8;font-size:12px;">Chưa có dữ liệu.</p></div>
+</div>
+
+<!-- ── Section 8: Quick param sweep ─────────────────────────────────────── -->
+<div class="card">
+  <h2>6. ⚡ Quick Param Sweep — Thử loạt tham số tự động</h2>
+  <p style="font-size:12px;color:#4b5563;margin-bottom:10px;">
+    Nhấn nút dưới để tự động chụp snapshot với nhiều giá trị threshold / Canny / motion config và ghi kết quả vào parameter_experiment_log.
+  </p>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;">
+    <button class="btn btn-primary" onclick="sweepThreshold()">🔁 Sweep Threshold (80/120/180)</button>
+    <button class="btn btn-primary" onclick="sweepCanny()">🔁 Sweep Canny (50/100 · 80/160 · 150/250)</button>
+    <button class="btn btn-green" onclick="sweepMotion()">🔁 Sweep Motion (3 configs)</button>
+  </div>
+  <pre id="sweepLog" style="background:#0b1220;color:#86efac;border-radius:10px;padding:10px;max-height:200px;overflow:auto;font-size:12px;margin-top:10px;">Sweep log sẽ hiện ở đây...</pre>
+</div>
+
+</main>
+
+<script>
+// ─── Utility ─────────────────────────────────────────────────────────────────
+function src()  { return encodeURIComponent(document.getElementById('source').value || '0'); }
+function tv()   { return parseInt(document.getElementById('threshNum').value) || 120; }
+function cl()   { return parseInt(document.getElementById('cannyLow').value) || 80; }
+function ch()   { return parseInt(document.getElementById('cannyHigh').value) || 160; }
+function mt()   { return parseInt(document.getElementById('motionThresh').value) || 25; }
+function ma()   { return parseInt(document.getElementById('minArea').value) || 800; }
+function cd()   { return parseFloat(document.getElementById('cooldown').value) || 0; }
+
+function roiParams() {
+  const x1 = document.getElementById('roiX1').value;
+  const y1 = document.getElementById('roiY1').value;
+  const x2 = document.getElementById('roiX2').value;
+  const y2 = document.getElementById('roiY2').value;
+  if (x1 && y1 && x2 && y2) {
+    return `&roi_x1=${x1}&roi_y1=${y1}&roi_x2=${x2}&roi_y2=${y2}`;
+  }
+  return '';
+}
+
+function setOut(data) { document.getElementById('out').textContent = JSON.stringify(data, null, 2); }
+
+function setImages(data) {
+  if (data.raw_image_url) document.getElementById('raw').src = data.raw_image_url + '?t=' + Date.now();
+  if (data.processed_image_url) document.getElementById('processed').src = data.processed_image_url + '?t=' + Date.now();
+}
+
+function syncRange(name) {
+  const r = document.getElementById(name + 'Range');
+  document.getElementById(name + 'Val').textContent = r.value;
+  document.getElementById(name + 'Num').value = r.value;
+}
+function syncNum(name) {
+  const n = document.getElementById(name + 'Num');
+  document.getElementById(name + 'Range').value = n.value;
+  document.getElementById(name + 'Val').textContent = n.value;
+}
+
+function setROICenter() {
+  // Default to 640x360 frame center 50%
+  document.getElementById('roiX1').value = 160;
+  document.getElementById('roiY1').value = 90;
+  document.getElementById('roiX2').value = 480;
+  document.getElementById('roiY2').value = 270;
+}
+function clearROI() {
+  ['roiX1','roiY1','roiX2','roiY2'].forEach(id => document.getElementById(id).value = '');
+}
+
+// ─── Camera ───────────────────────────────────────────────────────────────────
+function startStream() {
+  document.getElementById('stream').src = '/video_feed?source=' + src() + '&t=' + Date.now();
+  document.getElementById('streamStatus').textContent = 'Đang stream';
+  document.getElementById('streamStatus').className = 'badge badge-green';
+  setupROICanvas();
+}
+function stopStream() {
+  document.getElementById('stream').src = '';
+  document.getElementById('streamStatus').textContent = 'Đã dừng';
+  document.getElementById('streamStatus').className = 'badge badge-gray';
+}
+
+// ─── ROI Canvas draw ─────────────────────────────────────────────────────────
+let roiDrag = false, roiStart = {x:0,y:0};
+function setupROICanvas() {
+  const img = document.getElementById('stream');
+  const canvas = document.getElementById('roi-canvas');
+  function syncSize() {
+    canvas.width = img.clientWidth;
+    canvas.height = img.clientHeight;
+    canvas.style.width = img.clientWidth + 'px';
+    canvas.style.height = img.clientHeight + 'px';
+  }
+  syncSize();
+  new ResizeObserver(syncSize).observe(img);
+
+  canvas.onmousedown = (e) => {
+    roiDrag = true;
+    const r = canvas.getBoundingClientRect();
+    roiStart = {x: e.clientX - r.left, y: e.clientY - r.top};
+  };
+  canvas.onmousemove = (e) => {
+    if (!roiDrag) return;
+    const r = canvas.getBoundingClientRect();
+    const cx = e.clientX - r.left, cy = e.clientY - r.top;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 2;
+    ctx.strokeRect(roiStart.x, roiStart.y, cx - roiStart.x, cy - roiStart.y);
+  };
+  canvas.onmouseup = (e) => {
+    roiDrag = false;
+    const r = canvas.getBoundingClientRect();
+    const cx = e.clientX - r.left, cy = e.clientY - r.top;
+    // scale to 640x360
+    const sx = 640 / canvas.width, sy = 360 / canvas.height;
+    const x1 = Math.round(Math.min(roiStart.x, cx) * sx);
+    const y1 = Math.round(Math.min(roiStart.y, cy) * sy);
+    const x2 = Math.round(Math.max(roiStart.x, cx) * sx);
+    const y2 = Math.round(Math.max(roiStart.y, cy) * sy);
+    document.getElementById('roiX1').value = x1;
+    document.getElementById('roiY1').value = y1;
+    document.getElementById('roiX2').value = x2;
+    document.getElementById('roiY2').value = y2;
+  };
+}
+
+// ─── API calls ────────────────────────────────────────────────────────────────
+async function snapshot() {
+  const url = `/snapshot?source=${src()}&threshold_value=${tv()}&canny_low=${cl()}&canny_high=${ch()}${roiParams()}`;
+  const d = await (await fetch(url)).json();
+  setOut(d); setImages(d); refreshDashboard();
+}
+
+async function recordVideo() {
+  const d = await (await fetch(`/record-video?seconds=5&source=${src()}`)).json();
+  setOut(d); refreshDashboard();
+}
+
+async function motionCapture() {
+  const url = `/motion-capture?source=${src()}&seconds=8&threshold=${mt()}&min_area=${ma()}&cooldown=${cd()}&threshold_value=${tv()}&canny_low=${cl()}&canny_high=${ch()}${roiParams()}`;
+  const d = await (await fetch(url)).json();
+  setOut(d); setImages(d); refreshDashboard();
+}
+
+async function uploadImage() {
+  const f = document.getElementById('file').files[0];
+  if (!f) { alert('Cần chọn ảnh trước.'); return; }
+  const fd = new FormData();
+  fd.append('file', f);
+  const url = `/upload-image?device_id=dashboard_upload&threshold_value=${tv()}&canny_low=${cl()}&canny_high=${ch()}${roiParams()}`;
+  const d = await (await fetch(url, {method:'POST', body:fd})).json();
+  setOut(d); setImages(d); refreshDashboard();
+}
+
+// ─── Quick Sweep ─────────────────────────────────────────────────────────────
+function appendSweepLog(msg) {
+  const el = document.getElementById('sweepLog');
+  el.textContent += msg + '\n';
+  el.scrollTop = el.scrollHeight;
+}
+
+async function sweepThreshold() {
+  document.getElementById('sweepLog').textContent = '=== Sweep Threshold ===\n';
+  for (const t of [80, 120, 180]) {
+    document.getElementById('threshNum').value = t;
+    document.getElementById('threshRange').value = t;
+    document.getElementById('threshVal').textContent = t;
+    const url = `/snapshot?source=${src()}&threshold_value=${t}&canny_low=${cl()}&canny_high=${ch()}${roiParams()}`;
+    const d = await (await fetch(url)).json();
+    appendSweepLog(`threshold=${t} → brightness=${d.stats?.brightness} blur=${d.stats?.blur_score} event=${d.event?.event_type}`);
+    await new Promise(r => setTimeout(r, 300));
+  }
+  appendSweepLog('✓ Done. Xem Parameter Experiment Log bên dưới.');
+  refreshDashboard();
+}
+
+async function sweepCanny() {
+  document.getElementById('sweepLog').textContent = '=== Sweep Canny Edge ===\n';
+  for (const [low, high] of [[50,100],[80,160],[150,250]]) {
+    document.getElementById('cannyLow').value = low;
+    document.getElementById('cannyHigh').value = high;
+    const url = `/snapshot?source=${src()}&threshold_value=${tv()}&canny_low=${low}&canny_high=${high}${roiParams()}`;
+    const d = await (await fetch(url)).json();
+    appendSweepLog(`canny=${low}/${high} → brightness=${d.stats?.brightness} blur=${d.stats?.blur_score} event=${d.event?.event_type}`);
+    await new Promise(r => setTimeout(r, 300));
+  }
+  appendSweepLog('✓ Done.');
+  refreshDashboard();
+}
+
+async function sweepMotion() {
+  document.getElementById('sweepLog').textContent = '=== Sweep Motion Configs ===\n';
+  const configs = [{t:15,a:500,c:0},{t:25,a:800,c:1},{t:40,a:1500,c:5}];
+  for (const cfg of configs) {
+    const url = `/motion-capture?source=${src()}&seconds=3&threshold=${cfg.t}&min_area=${cfg.a}&cooldown=${cfg.c}&threshold_value=${tv()}&canny_low=${cl()}&canny_high=${ch()}${roiParams()}`;
+    const d = await (await fetch(url)).json();
+    appendSweepLog(`threshold=${cfg.t} min_area=${cfg.a} cooldown=${cfg.c} → score=${d.motion_score} event=${d.motion_event?.event_type} suppressed=${d.suppressed_by_cooldown}`);
+    await new Promise(r => setTimeout(r, 400));
+  }
+  appendSweepLog('✓ Done.');
+  refreshDashboard();
+}
+
+// ─── Dashboard refresh ────────────────────────────────────────────────────────
+function severityBadge(sev) {
+  const map = {WARNING:'badge-orange', NORMAL:'badge-green', INFO:'badge-blue'};
+  return `<span class="badge ${map[sev]||'badge-gray'}">${sev||''}</span>`;
+}
+function eventBadge(ev) {
+  if (!ev) return '-';
+  const color = ev.includes('MOTION') ? 'badge-orange' : ev.includes('QUALITY_OK') ? 'badge-green' : ev.includes('WARNING') || ev.includes('LOW') || ev.includes('BLUR') ? 'badge-orange' : 'badge-gray';
+  return `<span class="badge ${color}">${ev}</span>`;
+}
+
+function tableFromRows(rows, cols) {
+  if (!rows || rows.length === 0) return '<p style="font-size:12px;color:#94a3b8;">Chưa có dữ liệu.</p>';
+  let html = '<table><thead><tr>';
+  for (const c of cols) html += `<th>${c}</th>`;
+  html += '</tr></thead><tbody>';
+  for (const row of rows.slice().reverse()) {
+    html += '<tr>';
+    for (const c of cols) {
+      let val = row[c] ?? '';
+      if (c === 'severity') val = severityBadge(val);
+      else if (c === 'event_type') val = eventBadge(val);
+      else if (c === 'timestamp') val = `<span style="color:#64748b">${val}</span>`;
+      html += `<td>${val}</td>`;
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  return html;
+}
+
+async function refreshDashboard() {
+  const latest = await (await fetch('/latest')).json();
+  document.getElementById('metadataCount').textContent = latest.metadata_count || 0;
+  document.getElementById('eventCount').textContent = latest.event_count || 0;
+  document.getElementById('paramCount').textContent = latest.param_count || 0;
+  document.getElementById('latestEvent').textContent = latest.latest_event?.event_type || '-';
+  document.getElementById('metaBadge').textContent = latest.metadata_count || 0;
+  document.getElementById('evtBadge').textContent = latest.event_count || 0;
+  document.getElementById('paramBadge').textContent = latest.param_count || 0;
+  if (latest.raw_image_url) document.getElementById('raw').src = latest.raw_image_url + '?t=' + Date.now();
+  if (latest.processed_image_url) document.getElementById('processed').src = latest.processed_image_url + '?t=' + Date.now();
+
+  const meta = await (await fetch('/metadata?limit=10')).json();
+  const ev   = await (await fetch('/events?limit=10')).json();
+  const prm  = await (await fetch('/param-experiments?limit=15')).json();
+
+  document.getElementById('metadataTable').innerHTML = tableFromRows(
+    meta.items, ['image_id','timestamp','brightness','blur_score','width','height','processing_time_ms','source_type']
+  );
+  document.getElementById('eventTable').innerHTML = tableFromRows(
+    ev.items, ['event_type','severity','score','timestamp','explanation']
+  );
+  document.getElementById('paramTable').innerHTML = tableFromRows(
+    prm.items, ['exp_id','timestamp','threshold_value','canny_low','canny_high','motion_threshold','min_area','cooldown_sec','brightness','blur_score','motion_score','event_type','note']
+  );
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+setupROICanvas();
+refreshDashboard();
+setInterval(refreshDashboard, 6000);
+</script>
+</body>
+</html>

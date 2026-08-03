@@ -1,0 +1,14 @@
+LOCAL_PIPELINE_TEST_PASS
+[FRAME 0] image_id=img_504833a61c event=IMAGE_QUALITY_OK brightness=155.41 blur=141.29
+[FRAME 1] image_id=img_a9d850e23a event=IMAGE_QUALITY_OK brightness=155.57 blur=133.01
+[ROI] image_id=img_e5e3434f6f roi=(160, 90, 480, 270) event=BLURRY_IMAGE
+[THRESH=80] brightness=156.73 blur=159.64 event=IMAGE_QUALITY_OK
+[THRESH=120] brightness=157.82 blur=160.93 event=IMAGE_QUALITY_OK
+[THRESH=180] brightness=155.39 blur=159.88 event=IMAGE_QUALITY_OK
+[CANNY=50/100] event=IMAGE_QUALITY_OK
+[CANNY=80/160] event=IMAGE_QUALITY_OK
+[CANNY=150/250] event=IMAGE_QUALITY_OK
+[VIDEO] video_id=vid_3bf3b3f56b frames=10
+[MOTION threshold=15 min_area=500 cooldown=0] score=0.0 event=NO_SIGNIFICANT_MOTION suppressed=False
+[MOTION threshold=25 min_area=800 cooldown=1] score=0.0 event=NO_SIGNIFICANT_MOTION suppressed=False
+[MOTION threshold=40 min_area=1500 cooldown=5] score=0.0 event=NO_SIGNIFICANT_MOTION suppressed=False
